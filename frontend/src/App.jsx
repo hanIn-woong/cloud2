@@ -5,7 +5,35 @@ import heroImg from './assets/hero.png'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [todos, setTodos] = useState([
+    { id: 1, text: 'Learn React', completed: true },
+    { id: 2, text: 'Build a Fullstack App', completed: false },
+  ])
+  const [inputValue, setInputValue] = useState('')
+
+  const addTodo = (e) => {
+    e.preventDefault()
+    if (!inputValue.trim()) return
+    const newTodo = {
+      id: Date.now(),
+      text: inputValue,
+      completed: false,
+    }
+    setTodos([...todos, newTodo])
+    setInputValue('')
+  }
+
+  const toggleTodo = (id) => {
+    setTodos(
+      todos.map((todo) =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    )
+  }
+
+  const deleteTodo = (id) => {
+    setTodos(todos.filter((todo) => todo.id !== id))
+  }
 
   return (
     <>
@@ -16,18 +44,37 @@ function App() {
           <img src={viteLogo} className="vite" alt="Vite logo" />
         </div>
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+          <h1>Todo List</h1>
+          <p>Manage your tasks efficiently</p>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
+
+        <div className="todo-container">
+          <form onSubmit={addTodo} className="todo-form">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Add a new task..."
+              className="todo-input"
+            />
+            <button type="submit" className="todo-add-btn">
+              Add
+            </button>
+          </form>
+
+          <ul className="todo-list">
+            {todos.map((todo) => (
+              <li key={todo.id} className={`todo-item ${todo.completed ? 'completed' : ''}`}>
+                <span onClick={() => toggleTodo(todo.id)} className="todo-text">
+                  {todo.text}
+                </span>
+                <button onClick={() => deleteTodo(todo.id)} className="todo-delete-btn">
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       <div className="ticks"></div>
@@ -83,30 +130,6 @@ function App() {
                   <use href="/icons.svg#discord-icon"></use>
                 </svg>
                 Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
               </a>
             </li>
           </ul>
