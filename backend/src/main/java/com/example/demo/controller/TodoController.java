@@ -1,5 +1,6 @@
-package com.example.demo;
+package com.example.demo.controller;
 
+import com.example.demo.domain.Todo;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -8,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 @RequestMapping("/api/todos")
-@CrossOrigin(origins = "*") // 간편한 연동을 위해 모든 origin 허용
+@CrossOrigin(origins = "*")
 public class TodoController {
 
     private final List<Todo> todos = new ArrayList<>();

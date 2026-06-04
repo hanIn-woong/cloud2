@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
@@ -10,6 +10,20 @@ function App() {
     { id: 2, text: 'Build a Fullstack App', completed: false },
   ])
   const [inputValue, setInputValue] = useState('')
+  const [connectionStatus, setConnectionStatus] = useState('Checking backend...')
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/test')
+      .then(res => res.json())
+      .then(data => {
+        setConnectionStatus(data.message)
+        console.log('Backend connected:', data)
+      })
+      .catch(err => {
+        setConnectionStatus('Backend connection failed')
+        console.error('Connection error:', err)
+      })
+  }, [])
 
   const addTodo = (e) => {
     e.preventDefault()
@@ -46,6 +60,9 @@ function App() {
         <div>
           <h1>Todo List</h1>
           <p>Manage your tasks efficiently</p>
+          <p style={{ color: connectionStatus === 'Backend connection is working!' ? 'green' : 'red' }}>
+            {connectionStatus}
+          </p>
         </div>
 
         <div className="todo-container">
