@@ -4,59 +4,64 @@ import api from './api'
 import './App.css'
 import './Board.css'
 
-// Mock Data (To be replaced in Step 4)
-const initialPosts = [
-  { id: 1, title: '첫 번째 게시글', author: '관리자', createdAt: '2024-05-20T10:00:00', content: '안녕하세요. 첫 번째 게시글입니다.' },
-  { id: 2, title: 'React + Spring Boot 연동', author: '개발자', createdAt: '2024-05-21T14:30:00', content: '연동이 아주 잘 되네요!' },
-]
-
 function PostList() {
-  const [posts, setPosts] = useState(initialPosts)
-  const [connectionStatus, setConnectionStatus] = useState('Checking backend...')
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
-    api.get('/test')
-      .then(res => {
-        setConnectionStatus(res.data.message)
-      })
-      .catch(err => {
-        setConnectionStatus('Backend connection failed')
-        console.error('Connection error:', err)
-      })
+    fetchPosts()
   }, [])
+
+  const fetchPosts = async () => {
+    try {
+      setLoading(true)
+      const res = await api.get('/posts')
+      setPosts(res.data)
+    } catch (err) {
+      console.error('Failed to fetch posts:', err)
+      alert('게시글 목록을 불러오는 데 실패했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="board-container">
       <div className="board-header">
-        <div>
-          <h1>게시판 목록</h1>
-          <p style={{ color: connectionStatus === 'Backend connection is working!' ? 'green' : 'red', fontSize: '0.8rem' }}>
-            {connectionStatus}
-          </p>
-        </div>
+        <h1>게시판 목록</h1>
         <Link to="/write" className="btn btn-primary">글쓰기</Link>
       </div>
-      <table className="board-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>제목</th>
-            <th>작성자</th>
-            <th>작성일</th>
-          </tr>
-        </thead>
-        <tbody>
-          {posts.map(post => (
-            <tr key={post.id} onClick={() => navigate(`/posts/${post.id}`)}>
-              <td>{post.id}</td>
-              <td>{post.title}</td>
-              <td>{post.author}</td>
-              <td>{new Date(post.createdAt).toLocaleDateString()}</td>
+      {loading ? (
+        <p>로딩 중...</p>
+      ) : (
+        <table className="board-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>제목</th>
+              <th>작성자</th>
+              <th>작성일</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {posts.length > 0 ? (
+              posts.map(post => (
+                <tr key={post.id} onClick={() => navigate(`/posts/${post.id}`)}>
+                  <td>{post.id}</td>
+                  <td>{post.title}</td>
+                  <td>{post.author}</td>
+                  <td>{new Date(post.createdAt).toLocaleDateString()}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" style={{ textAlign: 'center', padding: '30px' }}>게시글이 없습니다. 첫 글을 작성해보세요!</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
@@ -64,9 +69,44 @@ function PostList() {
 function PostDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const post = initialPosts.find(p => p.id === parseInt(id))
+  const [post, setPost] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  if (!post) return <div>게시글을 찾을 수 없습니다.</div>
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        const res = await api.get(`/posts/${id}`)
+        setPost(res.data)
+      } catch (err) {
+        console.error('Failed to fetch post:', err)
+        alert('게시글을 불러올 수 없습니다.')
+        navigate('/')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPost()
+  }, [id, navigate])
+
+  const handleDelete = async () => {
+    const password = prompt('삭제를 위해 비밀번호를 입력해주세요.')
+    if (!password) return
+
+    try {
+      await api.delete(`/posts/${id}`, { params: { password } })
+      alert('게시글이 삭제되었습니다.')
+      navigate('/')
+    } catch (err) {
+      if (err.response && err.response.status === 403) {
+        alert('비밀번호가 일치하지 않습니다.')
+      } else {
+        alert('삭제 중 오류가 발생했습니다.')
+      }
+    }
+  }
+
+  if (loading) return <div className="board-container">로딩 중...</div>
+  if (!post) return <div className="board-container">게시글을 찾을 수 없습니다.</div>
 
   return (
     <div className="board-container">
@@ -79,7 +119,7 @@ function PostDetail() {
         <div className="actions">
           <button onClick={() => navigate('/')} className="btn btn-secondary">목록으로</button>
           <button onClick={() => navigate(`/edit/${id}`)} className="btn btn-primary">수정</button>
-          <button className="btn btn-danger">삭제</button>
+          <button onClick={handleDelete} className="btn btn-danger">삭제</button>
         </div>
       </div>
     </div>
@@ -99,22 +139,41 @@ function PostForm() {
 
   useEffect(() => {
     if (isEdit) {
-      const post = initialPosts.find(p => p.id === parseInt(id))
-      if (post) {
-        setFormData({
-          title: post.title,
-          author: post.author,
-          content: post.content,
-          password: ''
-        })
+      const fetchPost = async () => {
+        try {
+          const res = await api.get(`/posts/${id}`)
+          setFormData({
+            title: res.data.title,
+            author: res.data.author,
+            content: res.data.content,
+            password: ''
+          })
+        } catch (err) {
+          console.error('Failed to fetch post for edit:', err)
+        }
       }
+      fetchPost()
     }
   }, [id, isEdit])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    alert(isEdit ? '수정되었습니다. (Mock)' : '저장되었습니다. (Mock)')
-    navigate('/')
+    try {
+      if (isEdit) {
+        await api.put(`/posts/${id}`, formData)
+        alert('수정되었습니다.')
+      } else {
+        await api.post('/posts', formData)
+        alert('저장되었습니다.')
+      }
+      navigate('/')
+    } catch (err) {
+      if (err.response && err.response.status === 403) {
+        alert('비밀번호가 일치하지 않습니다.')
+      } else {
+        alert('처리 중 오류가 발생했습니다.')
+      }
+    }
   }
 
   return (
