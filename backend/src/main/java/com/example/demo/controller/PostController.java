@@ -4,6 +4,7 @@ import com.example.demo.dto.PostCreateRequest;
 import com.example.demo.dto.PostResponse;
 import com.example.demo.dto.PostUpdateRequest;
 import com.example.demo.service.PostService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,12 +33,12 @@ public class PostController {
     }
 
     @PostMapping
-    public PostResponse createPost(@RequestBody PostCreateRequest request) {
+    public PostResponse createPost(@Valid @RequestBody PostCreateRequest request) {
         return postService.createPost(request);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PostResponse> updatePost(@PathVariable Long id, @RequestBody PostUpdateRequest request) {
+    public ResponseEntity<PostResponse> updatePost(@PathVariable Long id, @Valid @RequestBody PostUpdateRequest request) {
         return postService.updatePost(id, request)
                 .map(updated -> {
                     if (updated == null) return ResponseEntity.status(HttpStatus.FORBIDDEN).<PostResponse>build();

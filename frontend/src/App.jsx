@@ -158,6 +158,13 @@ function PostForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Client-side basic validation
+    if (formData.password.length < 4) {
+      alert('비밀번호는 4자 이상이어야 합니다.')
+      return
+    }
+
     try {
       if (isEdit) {
         await api.put(`/posts/${id}`, formData)
@@ -168,10 +175,20 @@ function PostForm() {
       }
       navigate('/')
     } catch (err) {
-      if (err.response && err.response.status === 403) {
-        alert('비밀번호가 일치하지 않습니다.')
+      if (err.response) {
+        if (err.response.status === 403) {
+          alert('비밀번호가 일치하지 않습니다.')
+        } else if (err.response.status === 400) {
+          // Validation error
+          const messages = err.response.data.errors 
+            ? err.response.data.errors.map(e => e.defaultMessage).join('\n')
+            : '입력값이 올바르지 않습니다.'
+          alert(messages)
+        } else {
+          alert(`오류가 발생했습니다: ${err.response.status}`)
+        }
       } else {
-        alert('처리 중 오류가 발생했습니다.')
+        alert('서버와 통신할 수 없습니다.')
       }
     }
   }
